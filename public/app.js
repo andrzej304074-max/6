@@ -1,3 +1,5 @@
+const MAX_FILE_SIZE = 4 * 1024 * 1024; // limit żądania na Vercelu to 4,5 MB
+
 const form = document.getElementById('form');
 const titleInput = document.getElementById('title');
 const messageInput = document.getElementById('message');
@@ -60,6 +62,10 @@ form.addEventListener('submit', async (e) => {
     setStatus('Załącz zdjęcie.', 'err');
     return;
   }
+  if (photoInput.files[0].size > MAX_FILE_SIZE) {
+    setStatus('Zdjęcie jest za duże — maksymalny rozmiar to 4 MB.', 'err');
+    return;
+  }
 
   const data = new FormData();
   data.append('title', titleInput.value.trim());
@@ -71,7 +77,12 @@ form.addEventListener('submit', async (e) => {
 
   try {
     const res = await fetch('/api/send', { method: 'POST', body: data });
-    const body = await res.json();
+    let body = null;
+    try {
+      body = await res.json();
+    } catch {
+      // Vercel przy zbyt dużym żądaniu (413) zwraca odpowiedź bez JSON-a
+    }
 
     if (res.ok) {
       setStatus('Wysłano do ' + body.recipient + ' ✓', 'ok');
@@ -79,8 +90,10 @@ form.addEventListener('submit', async (e) => {
       preview.hidden = true;
       preview.src = '';
       dropzoneText.textContent = 'Kliknij lub upuść zdjęcie tutaj';
+    } else if (res.status === 413) {
+      setStatus('Zdjęcie jest za duże — maksymalny rozmiar to 4 MB.', 'err');
     } else {
-      setStatus(body.error || 'Coś poszło nie tak.', 'err');
+      setStatus((body && body.error) || 'Coś poszło nie tak.', 'err');
     }
   } catch {
     setStatus('Brak połączenia z serwerem.', 'err');
