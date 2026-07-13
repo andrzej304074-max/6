@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="pl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Wyślij zdjęcie</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <main class="card">
+    <h1>Wyślij zdjęcie</h1>
+    <p class="recipient">Adresat: <strong id="recipient">…</strong></p>
+
+    <form id="form" novalidate>
+      <label class="field">
+        <span>Tytuł</span>
+        <input type="text" id="title" name="title" placeholder="Tytuł wiadomości" required>
+      </label>
+
+      <label class="field">
+        <span>Wiadomość <em>(opcjonalnie)</em></span>
+        <textarea id="message" name="message" rows="3" placeholder="Krótka treść maila"></textarea>
+      </label>
+
+      <label class="dropzone" id="dropzone">
+        <input type="file" id="photo" name="photo" accept="image/*" hidden>
+        <span id="dropzone-text">Kliknij lub upuść zdjęcie tutaj</span>
+        <img id="preview" alt="" hidden>
+      </label>
+
+      <button type="submit" id="send">Wyślij</button>
+    </form>
+
+    <p class="status" id="status" role="status"></p>
+  </main>
+
+  <script src="app.js"></script>
+</body>
+</html>
