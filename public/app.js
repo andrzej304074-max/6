@@ -87,9 +87,13 @@ form.addEventListener('submit', async (e) => {
     if (res.ok) {
       setStatus('Wysłano do ' + body.recipient + ' ✓', 'ok');
       form.reset();
+      titleInput.value = '';
+      messageInput.value = '';
+      photoInput.value = '';
       preview.hidden = true;
       preview.src = '';
       dropzoneText.textContent = 'Kliknij lub upuść zdjęcie tutaj';
+      titleInput.focus();
     } else if (res.status === 413) {
       setStatus('Zdjęcie jest za duże — maksymalny rozmiar to 4 MB.', 'err');
     } else {
