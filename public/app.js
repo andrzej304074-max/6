@@ -10,6 +10,87 @@ const preview = document.getElementById('preview');
 const sendButton = document.getElementById('send');
 const statusEl = document.getElementById('status');
 
+// --- Domyślne tytuły (zapisywane w przeglądarce) ---
+
+const PRESETS_KEY = 'titlePresets';
+const MAX_PRESETS = 10;
+const presetsEl = document.getElementById('presets');
+
+function loadPresets() {
+  try {
+    const arr = JSON.parse(localStorage.getItem(PRESETS_KEY));
+    return Array.isArray(arr) ? arr.filter((t) => typeof t === 'string') : [];
+  } catch {
+    return [];
+  }
+}
+
+function savePresets(presets) {
+  localStorage.setItem(PRESETS_KEY, JSON.stringify(presets));
+}
+
+function renderPresets() {
+  const presets = loadPresets();
+  presetsEl.innerHTML = '';
+
+  presets.forEach((title) => {
+    const chip = document.createElement('button');
+    chip.type = 'button';
+    chip.className = 'chip';
+    chip.textContent = title;
+    chip.title = 'Kliknij, aby wstawić ten tytuł';
+
+    const x = document.createElement('span');
+    x.className = 'chip-x';
+    x.textContent = '×';
+    x.title = 'Usuń ten tytuł';
+    x.addEventListener('click', (e) => {
+      e.stopPropagation();
+      savePresets(loadPresets().filter((t) => t !== title));
+      renderPresets();
+    });
+    chip.appendChild(x);
+
+    chip.addEventListener('click', () => {
+      titleInput.value = title;
+      titleInput.focus();
+      setStatus('');
+    });
+
+    presetsEl.appendChild(chip);
+  });
+
+  const add = document.createElement('button');
+  add.type = 'button';
+  add.className = 'chip chip-add';
+  add.textContent = '+ Zapisz tytuł';
+  add.title = 'Zapisz wpisany wyżej tytuł jako domyślny';
+  add.addEventListener('click', () => {
+    const title = titleInput.value.trim();
+    if (!title) {
+      setStatus('Najpierw wpisz tytuł, który chcesz zapisać.', 'err');
+      return;
+    }
+    const current = loadPresets();
+    if (current.includes(title)) {
+      setStatus('Ten tytuł jest już zapisany.', 'err');
+      return;
+    }
+    if (current.length >= MAX_PRESETS) {
+      setStatus('Możesz zapisać maksymalnie ' + MAX_PRESETS + ' tytułów — usuń któryś (×).', 'err');
+      return;
+    }
+    savePresets([...current, title]);
+    renderPresets();
+    setStatus('Zapisano tytuł domyślny ✓', 'ok');
+  });
+  presetsEl.appendChild(add);
+}
+
+renderPresets();
+
+// --- Konfiguracja i wysyłka ---
+
 fetch('/api/config')
   .then((res) => res.json())
   .then((cfg) => {
