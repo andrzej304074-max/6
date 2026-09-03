@@ -7,35 +7,68 @@
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <main class="card">
-    <h1>Wyślij zdjęcie</h1>
-    <p class="recipient">Adresat: <strong id="recipient">…</strong></p>
+  <main class="card" id="card">
+    <nav class="tabs">
+      <button type="button" class="tab active" data-panel="panel-send">Wyślij</button>
+      <button type="button" class="tab" data-panel="panel-merge">Scal zdjęcia</button>
+    </nav>
 
-    <form id="form" novalidate>
-      <label class="field">
-        <span>Tytuł</span>
-        <input type="text" id="title" name="title" placeholder="Tytuł wiadomości" required>
+    <section id="panel-send">
+      <h1>Wyślij zdjęcie</h1>
+      <p class="recipient">Adresat: <strong id="recipient">…</strong></p>
+
+      <form id="form" novalidate>
+        <label class="field">
+          <span>Tytuł</span>
+          <input type="text" id="title" name="title" placeholder="Tytuł wiadomości" required>
+        </label>
+
+        <div class="presets" id="presets"></div>
+
+        <label class="field">
+          <span>Wiadomość <em>(opcjonalnie)</em></span>
+          <textarea id="message" name="message" rows="3" placeholder="Krótka treść maila"></textarea>
+        </label>
+
+        <label class="dropzone" id="dropzone">
+          <input type="file" id="photo" name="photo" accept="image/*" hidden>
+          <span id="dropzone-text">Kliknij lub upuść zdjęcie tutaj</span>
+          <img id="preview" alt="" hidden>
+        </label>
+
+        <button type="submit" id="send">Wyślij</button>
+      </form>
+
+      <p class="status" id="status" role="status"></p>
+    </section>
+
+    <section id="panel-merge" hidden>
+      <h1>Scal zdjęcia</h1>
+      <p class="recipient">Łączenie poziomo, w kolejności od lewej</p>
+
+      <label class="dropzone" id="merge-dropzone">
+        <input type="file" id="merge-input" accept="image/*" multiple hidden>
+        <span id="merge-dropzone-text">Kliknij lub upuść zdjęcia tutaj</span>
       </label>
 
-      <div class="presets" id="presets"></div>
+      <div class="thumbs" id="merge-thumbs"></div>
 
-      <label class="field">
-        <span>Wiadomość <em>(opcjonalnie)</em></span>
-        <textarea id="message" name="message" rows="3" placeholder="Krótka treść maila"></textarea>
-      </label>
+      <button type="button" id="merge-run" disabled>Scal zdjęcia</button>
 
-      <label class="dropzone" id="dropzone">
-        <input type="file" id="photo" name="photo" accept="image/*" hidden>
-        <span id="dropzone-text">Kliknij lub upuść zdjęcie tutaj</span>
-        <img id="preview" alt="" hidden>
-      </label>
+      <div id="merge-result" hidden>
+        <img id="merge-preview" alt="Scalone zdjęcie">
+        <p class="meta" id="merge-meta"></p>
+        <div class="actions">
+          <a id="merge-download" class="btn" download="scalone.jpg">Pobierz</a>
+          <button type="button" id="merge-to-mail" class="btn btn-ghost">Użyj w mailu</button>
+        </div>
+      </div>
 
-      <button type="submit" id="send">Wyślij</button>
-    </form>
-
-    <p class="status" id="status" role="status"></p>
+      <p class="status" id="merge-status" role="status"></p>
+    </section>
   </main>
 
   <script src="app.js"></script>
+  <script src="merge.js"></script>
 </body>
 </html>

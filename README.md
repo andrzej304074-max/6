@@ -6,6 +6,15 @@ się sam na stałego, skonfigurowanego adresata.
 
 ## Jak to działa
 
+Aplikacja ma dwie zakładki:
+
+- **Wyślij** — formularz maila ze zdjęciem.
+- **Scal zdjęcia** — łączenie kilku zdjęć w jeden poziomy pasek, z pobraniem wyniku
+  albo przekazaniem go od razu do formularza wysyłki. Scalanie dzieje się w całości
+  w przeglądarce (canvas), więc nic nie leci na serwer.
+
+Pod spodem:
+
 - **Frontend** — czysty HTML/CSS/JS (`public/`): formularz z tytułem, opcjonalną treścią
   i polem na zdjęcie (klik lub przeciągnij i upuść, z podglądem). Na Vercelu serwowany
   jako pliki statyczne.
@@ -66,11 +75,24 @@ npm start              # http://localhost:3000
 Lokalny serwer (`server.js`) używa dokładnie tych samych handlerów co funkcje na Vercelu.
 Możesz też użyć `vercel dev`, jeśli wolisz środowisko identyczne z produkcją.
 
+## Scalanie zdjęć
+
+W zakładce **Scal zdjęcia** wybierasz od 2 do 10 zdjęć, ustawiasz ich kolejność
+strzałkami ◀ ▶ i klikasz **Scal zdjęcia**. Wszystkie są skalowane do wspólnej wysokości
+i sklejane w poziomy pasek — np. trzy zdjęcia 1000 × 1333 px dają wynik 3000 × 1333 px.
+Gotowy obraz zapisujesz przyciskiem **Pobierz** (JPEG) albo wstawiasz go do formularza
+maila przyciskiem **Użyj w mailu**.
+
 ## Limity
 
-- Maksymalny rozmiar zdjęcia: **4 MB** — Vercel odrzuca żądania do funkcji serverless
-  większe niż 4,5 MB.
-- Akceptowane są tylko pliki graficzne (JPG, PNG, GIF, WEBP itd.).
+- Maksymalny rozmiar zdjęcia w mailu: **4 MB** — Vercel odrzuca żądania do funkcji
+  serverless większe niż 4,5 MB. Scalanie nie podlega temu limitowi (dzieje się
+  lokalnie), ale wynik powyżej 4 MB nada się już tylko do pobrania.
+- Scalanie: maksymalnie 10 zdjęć, wynik nie szerszy niż 16000 px (szersze są
+  proporcjonalnie zmniejszane).
+- Akceptowane są tylko pliki graficzne (JPG, PNG, GIF, WEBP itd.). Scalanie obsługuje
+  formaty, które potrafi wyświetlić przeglądarka — HEIC z iPhone'a zadziała w Safari,
+  ale nie w Chrome.
 
 ## Bezpieczeństwo
 
