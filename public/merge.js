@@ -324,28 +324,68 @@
 
   // Zapis do stale tego samego pliku (File System Access API). Przeglądarka przy
   // zwykłym pobieraniu sama dokleja "(1)", więc jedyny sposób na realne nadpisanie
-  // to trzymanie uchwytu do wybranego raz pliku — chowamy go w IndexedDB.
+  // to trzymanie uchwytu do wybranego raz pliku. Uchwyt żyje w pamięci (żeby zapis
+  // działał nawet bez IndexedDB) i dodatkowo w IndexedDB (żeby przetrwał odświeżenie).
   const HANDLE_DB = 'photoMerge';
   const HANDLE_STORE = 'handles';
   const HANDLE_KEY = 'saveTarget';
 
   function withStore(mode, action) {
     return new Promise((resolve, reject) => {
-      const open = indexedDB.open(HANDLE_DB, 1);
+      let open;
+      try {
+        open = indexedDB.open(HANDLE_DB, 1);
+      } catch (err) {
+        return reject(err);
+      }
       open.onupgradeneeded = () => open.result.createObjectStore(HANDLE_STORE);
       open.onerror = () => reject(open.error);
+      open.onblocked = () => reject(new Error('IndexedDB zablokowane'));
       open.onsuccess = () => {
         const db = open.result;
-        const request = action(db.transaction(HANDLE_STORE, mode).objectStore(HANDLE_STORE));
-        request.onsuccess = () => resolve(request.result);
-        request.onerror = () => reject(request.error);
-        request.transaction.oncomplete = () => db.close();
+        // każdy błąd musi odrzucić obietnicę — inaczej zapis czekałby w nieskończoność
+        try {
+          const request = action(db.transaction(HANDLE_STORE, mode).objectStore(HANDLE_STORE));
+          request.onsuccess = () => resolve(request.result);
+          request.onerror = () => reject(request.error);
+          request.transaction.oncomplete = () => db.close();
+          request.transaction.onabort = () => reject(request.transaction.error);
+        } catch (err) {
+          db.close();
+          reject(err);
+        }
       };
     });
   }
 
   const readHandle = () => withStore('readonly', (s) => s.get(HANDLE_KEY)).catch(() => null);
   const writeHandle = (h) => withStore('readwrite', (s) => s.put(h, HANDLE_KEY)).catch(() => null);
+
+  let saveHandle = null;
+
+  async function pickTarget() {
+    const handle = await window.showSaveFilePicker({
+      suggestedName: FILE_NAME,
+      types: [{ description: 'Zdjęcie JPEG', accept: { 'image/jpeg': ['.jpg', '.jpeg'] } }],
+    });
+    saveHandle = handle;
+    await writeHandle(handle);
+    return handle;
+  }
+
+  async function allowed(handle) {
+    let permission = await handle.queryPermission({ mode: 'readwrite' });
+    if (permission !== 'granted') {
+      permission = await handle.requestPermission({ mode: 'readwrite' });
+    }
+    return permission === 'granted';
+  }
+
+  async function writeTo(handle) {
+    const writable = await handle.createWritable();
+    await writable.write(resultBlob);
+    await writable.close();
+  }
 
   async function save() {
     if (!resultBlob) return false;
@@ -355,27 +395,26 @@
     }
 
     try {
-      let handle = await readHandle();
+      // pamięć ma pierwszeństwo — IndexedDB bywa niedostępne (tryb prywatny,
+      // wyczyszczone dane witryny) i wtedy nie może decydować o nadpisywaniu
+      let handle = saveHandle || (await readHandle()) || null;
 
-      if (handle) {
-        let permission = await handle.queryPermission({ mode: 'readwrite' });
-        if (permission !== 'granted') {
-          permission = await handle.requestPermission({ mode: 'readwrite' });
+      if (handle && !(await allowed(handle))) handle = null;
+      if (!handle) handle = await pickTarget();
+      saveHandle = handle;
+
+      try {
+        await writeTo(handle);
+      } catch (err) {
+        // plik został przeniesiony, usunięty albo zgodę cofnięto — pytamy o miejsce raz jeszcze
+        if (err && (err.name === 'NotFoundError' || err.name === 'NotAllowedError')) {
+          saveHandle = null;
+          handle = await pickTarget();
+          await writeTo(handle);
+        } else {
+          throw err;
         }
-        if (permission !== 'granted') handle = null;
       }
-
-      if (!handle) {
-        handle = await window.showSaveFilePicker({
-          suggestedName: FILE_NAME,
-          types: [{ description: 'Zdjęcie JPEG', accept: { 'image/jpeg': ['.jpg', '.jpeg'] } }],
-        });
-        await writeHandle(handle);
-      }
-
-      const writable = await handle.createWritable();
-      await writable.write(resultBlob);
-      await writable.close();
 
       setStatus('Zapisano ' + (handle.name || FILE_NAME) + ' (nadpisano) ✓', 'ok');
       return true;
