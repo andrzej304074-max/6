@@ -33,6 +33,7 @@
   const MAX_PHOTOS = 10;
   const MAX_CANVAS_WIDTH = 16000; // powyżej tego przeglądarki przestają rysować
   const MAIL_LIMIT = 4 * 1024 * 1024;
+  const FILE_NAME = 'pro1.jpg';
 
   const panel = document.getElementById('panel-merge');
   const input = document.getElementById('merge-input');
@@ -45,6 +46,7 @@
   const previewEl = document.getElementById('merge-preview');
   const metaEl = document.getElementById('merge-meta');
   const downloadEl = document.getElementById('merge-download');
+  const saveButton = document.getElementById('merge-save');
   const toMailButton = document.getElementById('merge-to-mail');
   const statusEl = document.getElementById('merge-status');
 
@@ -320,6 +322,73 @@
     return downloadEl.getAttribute('download');
   }
 
+  // Zapis do stale tego samego pliku (File System Access API). Przeglądarka przy
+  // zwykłym pobieraniu sama dokleja "(1)", więc jedyny sposób na realne nadpisanie
+  // to trzymanie uchwytu do wybranego raz pliku — chowamy go w IndexedDB.
+  const HANDLE_DB = 'photoMerge';
+  const HANDLE_STORE = 'handles';
+  const HANDLE_KEY = 'saveTarget';
+
+  function withStore(mode, action) {
+    return new Promise((resolve, reject) => {
+      const open = indexedDB.open(HANDLE_DB, 1);
+      open.onupgradeneeded = () => open.result.createObjectStore(HANDLE_STORE);
+      open.onerror = () => reject(open.error);
+      open.onsuccess = () => {
+        const db = open.result;
+        const request = action(db.transaction(HANDLE_STORE, mode).objectStore(HANDLE_STORE));
+        request.onsuccess = () => resolve(request.result);
+        request.onerror = () => reject(request.error);
+        request.transaction.oncomplete = () => db.close();
+      };
+    });
+  }
+
+  const readHandle = () => withStore('readonly', (s) => s.get(HANDLE_KEY)).catch(() => null);
+  const writeHandle = (h) => withStore('readwrite', (s) => s.put(h, HANDLE_KEY)).catch(() => null);
+
+  async function save() {
+    if (!resultBlob) return false;
+    if (!window.showSaveFilePicker) {
+      download();
+      return true;
+    }
+
+    try {
+      let handle = await readHandle();
+
+      if (handle) {
+        let permission = await handle.queryPermission({ mode: 'readwrite' });
+        if (permission !== 'granted') {
+          permission = await handle.requestPermission({ mode: 'readwrite' });
+        }
+        if (permission !== 'granted') handle = null;
+      }
+
+      if (!handle) {
+        handle = await window.showSaveFilePicker({
+          suggestedName: FILE_NAME,
+          types: [{ description: 'Zdjęcie JPEG', accept: { 'image/jpeg': ['.jpg', '.jpeg'] } }],
+        });
+        await writeHandle(handle);
+      }
+
+      const writable = await handle.createWritable();
+      await writable.write(resultBlob);
+      await writable.close();
+
+      setStatus('Zapisano ' + (handle.name || FILE_NAME) + ' (nadpisano) ✓', 'ok');
+      return true;
+    } catch (err) {
+      if (err && err.name === 'AbortError') {
+        setStatus('');
+        return false;
+      }
+      fail('Nie udało się zapisać pliku — użyj przycisku Pobierz.');
+      return false;
+    }
+  }
+
   function useInMail() {
     if (!resultBlob) return false;
     if (resultBlob.size > MAIL_LIMIT) {
@@ -372,7 +441,11 @@
   dropzone.addEventListener('drop', (e) => addFiles(e.dataTransfer.files));
   runButton.addEventListener('click', () => merge());
   clearButton.addEventListener('click', clearAll);
+  saveButton.addEventListener('click', save);
   toMailButton.addEventListener('click', useInMail);
+
+  // przycisk nadpisywania ma sens tylko tam, gdzie działa File System Access API
+  saveButton.hidden = !window.showSaveFilePicker;
 
   // --- Start ---
 
@@ -386,9 +459,11 @@
   window.photoMerge = {
     version: 1,
     open: () => openTab('merge'),
+    fileName: FILE_NAME,
     addFiles,
     merge,
     download,
+    save,
     useInMail,
     clear: clearAll,
     state,

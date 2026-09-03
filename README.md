@@ -80,8 +80,20 @@ Możesz też użyć `vercel dev`, jeśli wolisz środowisko identyczne z produkc
 W zakładce **Scal zdjęcia** wybierasz od 2 do 10 zdjęć, ustawiasz ich kolejność
 strzałkami ◀ ▶ i klikasz **Scal zdjęcia**. Wszystkie są skalowane do wspólnej wysokości
 i sklejane w poziomy pasek — np. trzy zdjęcia 1000 × 1333 px dają wynik 3000 × 1333 px.
-Gotowy obraz zapisujesz przyciskiem **Pobierz** (JPEG) albo wstawiasz go do formularza
-maila przyciskiem **Użyj w mailu**.
+Gotowy obraz zapisujesz przyciskiem **Pobierz** (JPEG, zawsze pod nazwą `pro1.jpg`)
+albo wstawiasz go do formularza maila przyciskiem **Użyj w mailu**.
+
+### Nadpisywanie pliku
+
+Strona nadaje plikowi nazwę `pro1.jpg`, ale o tym, co zrobić z już istniejącym plikiem,
+decyduje przeglądarka — Chrome domyślnie dokłada `pro1 (1).jpg`, `pro1 (2).jpg` itd.
+Strona nie ma nad tym żadnej kontroli. Realnie nadpisać plik można na dwa sposoby:
+
+- **Ręcznie:** przycisk **Zapisz i nadpisz** — za pierwszym razem wybierasz miejsce
+  zapisu, każdy kolejny zapis nadpisuje dokładnie ten sam plik. Wymaga przeglądarki
+  z File System Access API (Chrome, Edge); tam, gdzie go nie ma, przycisk się nie pokazuje.
+- **W automacie:** blok **Handle Download** w Automie, pole *File name* = `pro1.jpg`
+  i *On conflict* = **overwrite**.
 
 ## Sterowanie automatem (Automa)
 
@@ -98,7 +110,8 @@ Każdy element ma atrybut `data-automa`, niezależny od wyglądu strony:
 | `[data-automa="merge-input"]` | pole na zdjęcia (blok **Upload file**) |
 | `[data-automa="merge-run"]` | przycisk „Scal zdjęcia" |
 | `[data-automa="merge-clear"]` | przycisk „Wyczyść" |
-| `[data-automa="merge-download"]` | przycisk „Pobierz" |
+| `[data-automa="merge-download"]` | przycisk „Pobierz" (plik `pro1.jpg`) |
+| `[data-automa="merge-save"]` | przycisk „Zapisz i nadpisz" |
 | `[data-automa="merge-to-mail"]` | przycisk „Użyj w mailu" |
 | `[data-automa="merge-status"]` | komunikat tekstowy |
 | `[data-automa="title"]`, `[data-automa="photo"]`, `[data-automa="send"]` | formularz maila |
@@ -136,8 +149,9 @@ const state = await window.photoMerge.merge();
 automaNextBlock({ ok: state.state === 'done', ...state.result });
 ```
 
-Dostępne metody: `open()`, `addFiles(files)`, `merge()`, `download()`, `useInMail()`,
-`clear()`, `state()` oraz `dataUrl()` (zwraca scalone zdjęcie jako base64).
+Dostępne metody: `open()`, `addFiles(files)`, `merge()`, `download()`, `save()`,
+`useInMail()`, `clear()`, `state()` oraz `dataUrl()` (zwraca scalone zdjęcie jako base64);
+pole `fileName` zawiera nazwę pliku (`pro1.jpg`).
 
 Pole na zdjęcia działa też wtedy, gdy automat podstawi pliki bez zdarzenia `change` —
 strona sprawdza je dodatkowo co pół sekundy.

@@ -314,7 +314,12 @@ button:disabled {
 
 .actions {
   display: flex;
+  flex-wrap: wrap;
   gap: 0.5rem;
+}
+
+.actions > * {
+  min-width: 8rem;
 }
 
 .btn {
