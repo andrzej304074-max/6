@@ -9,8 +9,8 @@
 <body>
   <main class="card" id="card">
     <nav class="tabs">
-      <button type="button" class="tab active" data-panel="panel-send">Wyślij</button>
-      <button type="button" class="tab" data-panel="panel-merge">Scal zdjęcia</button>
+      <button type="button" class="tab active" data-panel="panel-send" data-automa="tab-send">Wyślij</button>
+      <button type="button" class="tab" data-panel="panel-merge" data-automa="tab-merge">Scal zdjęcia</button>
     </nav>
 
     <section id="panel-send">
@@ -20,51 +20,54 @@
       <form id="form" novalidate>
         <label class="field">
           <span>Tytuł</span>
-          <input type="text" id="title" name="title" placeholder="Tytuł wiadomości" required>
+          <input type="text" id="title" name="title" data-automa="title" placeholder="Tytuł wiadomości" required>
         </label>
 
         <div class="presets" id="presets"></div>
 
         <label class="field">
           <span>Wiadomość <em>(opcjonalnie)</em></span>
-          <textarea id="message" name="message" rows="3" placeholder="Krótka treść maila"></textarea>
+          <textarea id="message" name="message" data-automa="message" rows="3" placeholder="Krótka treść maila"></textarea>
         </label>
 
         <label class="dropzone" id="dropzone">
-          <input type="file" id="photo" name="photo" accept="image/*" hidden>
+          <input type="file" id="photo" name="photo" data-automa="photo" accept="image/*" hidden>
           <span id="dropzone-text">Kliknij lub upuść zdjęcie tutaj</span>
           <img id="preview" alt="" hidden>
         </label>
 
-        <button type="submit" id="send">Wyślij</button>
+        <button type="submit" id="send" data-automa="send">Wyślij</button>
       </form>
 
-      <p class="status" id="status" role="status"></p>
+      <p class="status" id="status" data-automa="send-status" role="status"></p>
     </section>
 
-    <section id="panel-merge" hidden>
+    <section id="panel-merge" data-state="idle" data-photos="0" data-ready="false" hidden>
       <h1>Scal zdjęcia</h1>
       <p class="recipient">Łączenie poziomo, w kolejności od lewej</p>
 
       <label class="dropzone" id="merge-dropzone">
-        <input type="file" id="merge-input" accept="image/*" multiple hidden>
+        <input type="file" id="merge-input" data-automa="merge-input" accept="image/*" multiple hidden>
         <span id="merge-dropzone-text">Kliknij lub upuść zdjęcia tutaj</span>
       </label>
 
       <div class="thumbs" id="merge-thumbs"></div>
 
-      <button type="button" id="merge-run" disabled>Scal zdjęcia</button>
+      <div class="actions">
+        <button type="button" id="merge-run" data-automa="merge-run" class="btn" disabled>Scal zdjęcia</button>
+        <button type="button" id="merge-clear" data-automa="merge-clear" class="btn btn-ghost" hidden>Wyczyść</button>
+      </div>
 
       <div id="merge-result" hidden>
-        <img id="merge-preview" alt="Scalone zdjęcie">
+        <img id="merge-preview" data-automa="merge-preview" alt="Scalone zdjęcie">
         <p class="meta" id="merge-meta"></p>
         <div class="actions">
-          <a id="merge-download" class="btn" download="scalone.jpg">Pobierz</a>
-          <button type="button" id="merge-to-mail" class="btn btn-ghost">Użyj w mailu</button>
+          <a id="merge-download" data-automa="merge-download" class="btn" download="scalone.jpg">Pobierz</a>
+          <button type="button" id="merge-to-mail" data-automa="merge-to-mail" class="btn btn-ghost">Użyj w mailu</button>
         </div>
       </div>
 
-      <p class="status" id="merge-status" role="status"></p>
+      <p class="status" id="merge-status" data-automa="merge-status" role="status"></p>
     </section>
   </main>
 

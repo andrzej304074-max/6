@@ -83,6 +83,65 @@ i sklejane w poziomy pasek — np. trzy zdjęcia 1000 × 1333 px dają wynik 300
 Gotowy obraz zapisujesz przyciskiem **Pobierz** (JPEG) albo wstawiasz go do formularza
 maila przyciskiem **Użyj w mailu**.
 
+## Sterowanie automatem (Automa)
+
+Zakładka scalania jest przygotowana pod automatyzację — bez losowych identyfikatorów,
+które psują workflow.
+
+### Stałe selektory
+
+Każdy element ma atrybut `data-automa`, niezależny od wyglądu strony:
+
+| Selektor | Element |
+|---|---|
+| `[data-automa="tab-merge"]` / `[data-automa="tab-send"]` | przełączniki zakładek |
+| `[data-automa="merge-input"]` | pole na zdjęcia (blok **Upload file**) |
+| `[data-automa="merge-run"]` | przycisk „Scal zdjęcia" |
+| `[data-automa="merge-clear"]` | przycisk „Wyczyść" |
+| `[data-automa="merge-download"]` | przycisk „Pobierz" |
+| `[data-automa="merge-to-mail"]` | przycisk „Użyj w mailu" |
+| `[data-automa="merge-status"]` | komunikat tekstowy |
+| `[data-automa="title"]`, `[data-automa="photo"]`, `[data-automa="send"]` | formularz maila |
+
+### Stan czytelny maszynowo
+
+Zamiast zgadywać, kiedy praca się skończyła, poczekaj na atrybut (blok **Element exists**
+z selektorem):
+
+- `#panel-merge[data-state="idle"]` — czeka na zdjęcia
+- `#panel-merge[data-state="merging"]` — scalanie w toku
+- `#panel-merge[data-state="done"]` — gotowe
+- `#panel-merge[data-state="error"]` — błąd, treść w `data-error`
+- dodatkowo: `data-photos` (liczba zdjęć), `data-ready` (`true`, gdy można scalać)
+- po scaleniu na `#merge-result`: `data-width`, `data-height`, `data-size` (bajty)
+
+### Sterowanie adresem URL
+
+- `https://twoja-strona.vercel.app/#merge` — otwiera od razu zakładkę scalania
+- `?automerge=1` — scala samo, gdy tylko trafią tam co najmniej 2 zdjęcia
+- `?autodownload=1` — pobiera wynik od razu po scaleniu
+
+Najprostszy workflow to więc: **New tab** na
+`https://twoja-strona.vercel.app/?automerge=1&autodownload=1#merge` → **Upload file**
+na `[data-automa="merge-input"]` → **Element exists** na `#panel-merge[data-state="done"]`.
+Żadnego klikania.
+
+### API w JavaScript
+
+W bloku **JavaScript Code** dostępny jest `window.photoMerge`:
+
+```javascript
+// scal i oddaj wynik do kolejnego bloku
+const state = await window.photoMerge.merge();
+automaNextBlock({ ok: state.state === 'done', ...state.result });
+```
+
+Dostępne metody: `open()`, `addFiles(files)`, `merge()`, `download()`, `useInMail()`,
+`clear()`, `state()` oraz `dataUrl()` (zwraca scalone zdjęcie jako base64).
+
+Pole na zdjęcia działa też wtedy, gdy automat podstawi pliki bez zdarzenia `change` —
+strona sprawdza je dodatkowo co pół sekundy.
+
 ## Limity
 
 - Maksymalny rozmiar zdjęcia w mailu: **4 MB** — Vercel odrzuca żądania do funkcji
